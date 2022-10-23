@@ -1,0 +1,108 @@
+MODELCLASS:
+E' una classe che contiene diversi argomenti del modello.
+Gli argomenti(func,numparams, ecc) sono raggiungibili tramite classe.argomento. ES:
+def func1(pars, x):
+	return a*x+b
+modello1=modelclass(func1,2)
+modello1.func #Restituisce la func1, quindi modello1.func(pars,3) è una chiamata valida
+
+-Func è la funzione modello, scritta tramite Python(vd. Esempi) e
+	ha forma func(pars,x), dove pars è un dizionario di tipo pars=Parameters()
+	mentre x è un array(NON una lista)
+-numParams è un numero intero che indica quanti parametri la funzione "func" usa
+	e lo scopo di questo è che la funzione Assegnaparam, chiamata dentro fit,
+	restituisce il dizionario dei soli parametri utilizzati, eliminando gli altri,
+	e fa questo utilizzando numParams
+-Vals sono i valori iniziali dei parametri (ovviamente quelli non utilizzati non
+	contano e sono lì a far niente). Di default sono tutti 1, ma ci sono casi in
+	cui potrebbe esser necessario partire da diversi valori iniziali.
+	Ad esempio se si vuole creare un modello in cui 'b' parte da 3.0, si scrive:
+	modello1=modelclass(func1,2,Vals={'a': 1.0, 'b': 3.0, 'c': 1.0, 'd': 1.0, 'e': 1.0})
+	Purtroppo non è ancora possibile modificare solo il valore che si vuole,
+	quindi ogni volta bisogna riscrivere tutto il dizionario(consiglio di 
+	fare copia e incolla da uno di quelli dentro "class modelclass()" e
+	modificarlo secondo necessità)
+-ValMin e ValMax sono i valori minimi e massimi che i parametri possono avere.
+	E' utile ad esempio se si ha una radice quadrata del tipo sqrt(5+b*x^2). In
+	questo caso, bisogna restringere b affinché abbia come valore minimo -1/x_max^2
+	così che la sqrt non diventi mai immaginaria. Stessa cosa per ValMax
+
+CLASSE XY:
+E' una classe che contiene gli array dei dati in uso. Vd. esempi nel codice per
+come usarla. Di fatto è una matrice con le righe disordinate, ma è molto più
+comoda perché le righe delle matrici di numpy non sono intuitive da raggiungere
+e si dovrebbe scrivere cose tipo "matricedati[:,3]" per ottenere un vettore
+specifico (è scomodo perché non si capisce che riga si sta chiamando se non ci
+si ricorda a memoria che "3" è il numero della riga di ciò che si cerca).
+Parimenti è stupido utilizzare 4 array separati poiché questi si muovono sempre
+assieme: sono poche le funzioni che ne chiedono solo un paio, e quindi si passa
+anche a queste la classe, anche se poi non la usano per intero.
+
+FUNZIONE FIT():
+All'inizio crea un dizionario di 5 parametri da utilizzare, coi loro valori
+iniziali, minimi e massimi (li prende dalla classe del modello). Poi brucia
+quelli che non servono(cioè se il modello ha scritto dentro di sè che gli
+servono 3 parametri, brucia gli ultimi 2*). La funzione "residual" è il vettore
+degli elementi che, sommati al quadrato, danno il X^2. "fit" stampa poi i risultati
+se "stampa" è True, e ritorna il dizionario dei parametri di best fit.
+*Se avessi scritto la funzione "fit" diversamente, essa dipenderebbe specificamente
+dal numero di parametri del modello. Invece così ogni fit passa dalla stessa
+funzione anche se il modello è diverso, e bisogna modificare solo una cosa 
+invece di due(che poi erano 3 o 4)
+
+FUNZIONE PLOTTA:
+Gli argomenti sono:
+-ax: la figura a cui ci si riferisce(si ottiene con fig,ax=plt.subplots()).
+	Così si può stampare nello stesso posto più volte, o stampare la stessa
+	cosa in posti diversi(nel secondo caso, chiamando altrettante volte la
+	funzione)
+-Classexy: la classe di cui sopra, che ha dentro tutti i valori x, y e i loro
+	errori
+-Nome e Colore: sono liste o stringhe. Se sono stringhe, stampa con quello
+	specifico colore e dà  quello specifico nome alla roba stampata nella legenda
+	(che non è inclusa nella funzione: bisogna chiederla da fuori). Se invece
+	sono liste, itera nome e colore con il parametro "i". Ovvero se:
+	nome=['Dati1','Dati2']
+	colore=['blue','red']
+	plotta(ax,classe1,0,nome,colore,AncheCurvaFit=False)
+	plotta(ax,classe2,1,nome,colore,AncheCurvaFit=False)
+	Stamperà due set di dati nello stesso posto con due colori diversi e due 
+	nomi diversi. I colori non finiscono mai: se la lista di colori ha 3 valori,
+	utilizzare i=5 stamperà con il secondo colore(5mod3=2), mentre i nomi no:
+	in questo modo non si rischia mai di dare nomi non voluti alle cose.
+-FunzioneModello e parametri: se "AncheCurvaFit" è True, stampa sullo stesso
+	grafico anche la curva di best fit usando il modello di FunzioneModello(
+	ovvero FunzioneModello.fun(pars,xdata)) e i parametri restituiti dalla
+	funzione fit()
+Oss: se DatiGrezzi e AncheCurvaFit sono falsi, "Plotta" non fa nulla
+Da fare: si può inserire un parametro per dare lo stile della curva di best fit,
+	in questo modo si potrebbero disegnare sullo stesso grafico la curva prima
+	e  dopo l'errore indotto. Andrebbe in questo caso introdotto anche un param.
+	aggiuntivo "j" da aggiungere per distinguere i due fit(mettendo
+	label=nom+" "+str(j) così da poter scrivere "dati 1" e "dati 2" per indicare
+	rispettivamente il fit senza e quello con l'errore indotto. Andrebbe anche aggiunta la possibilità di dare un nome (label) ai soli dati grezzi, ma
+	sono pochi i casi in cui ha senso stampare le serie di dati grezzi tutte
+	sullo stesso grafico, e nei casi rimanenti si può identificare la serie
+	dando un titolo al grafico
+
+GRADIENTE E ASSEGNAERRORE:
+Fanno quello che dicono: la prima calcola il gradiente di un campo scalare, la
+seconda gli assegna l'errore partendo dall'errore sulle x_0...x_k. E'
+fondamentale che la funzione ("func" in un caso e "g" nell'altro) sia definita
+in questo modo(stupido ma funzionale):
+def divisione(x):
+	return x[0]/x[1]
+Ovvero le funzioni devono avere solo un parametro: il vettore in cui si vuole 
+valutare il campo scalare, e poi deve essere compito della funzione estrapolare
+i valori necessari. Per comodità suggerisco di definire la funzione per un
+compito specifico e poi nominare i parametri dentro di essa. Esempio:
+CalcolaVolt(x):
+	Corrente=x[0]
+	Resistenza=x[1]
+	return Corrente*Resistenza
+Rimane scomodo fare così in contesti più generali, poiché questo sistema non
+funziona per nulla con gli array. Se si volesse trovare l'array dei Volt, dati
+un array di correnti e uno di tensioni, sarebbe necessario iterare su di essi
+tramite un ciclo for. In realtà il problema è irrisolvibile: non è possibile
+avere una sola funzione che lavora come vorremmo sia con i numeri sia con gli
+array e quindi la facciamo lavorare bene solo coi numeri. 
