@@ -1,17 +1,7 @@
 {
-	"folders": [
-		{
-			"path": "."
-		}
-	],
-	"settings": {
-		"launch": {
-			"configurations": [
-				{
-					"cwd": "${fileDirname}"
-				}
-			],
-			"compounds": []
-		}
-	}
+    "folders": [
+        {
+            "path": "."
+        }
+    ]
 }

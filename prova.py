@@ -1,22 +1,18 @@
-import uncertainties
-import math
-import os
 import string
+import os
+import math
+import uncertainties
+from pprint import pprint
 from uncertainties import unumpy as unp
 import pandas as pd
 import numpy as np
 from lmfit import Parameters, fit_report, minimize, Parameter
 import matplotlib.pyplot as plt
+from uncertainties.unumpy import std_devs, nominal_values
 
 Alfabeto = list(string.ascii_lowercase)
 Massimo_Parametri = 26
-
-x = np.array([41., 42., 43., 44., 45., 46., 47., 48., 49., 50.])
-y = np.array([33.9, 34.8, 34.7, 35.6, 36.4, 37.7, 36.8, 38.9, 38.6, 40.2])
-sx = np.array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
-
-arr = unp.uarray(x, sx)
-
+Colori = ['grey','blue','green','red','yellow','violet']
 
 def pescadati(file_name='my_file.xlsx', foglio=0, colonne='A:E', listaRighe=[0, 1, 2], header=None):
     """
@@ -46,28 +42,29 @@ def make_starting_pardict(n):
         param_dict = {"ValMin": None, "ValMax": None, "ValStart": None}
         final_dict[Alfabeto[i]] = param_dict
     return final_dict
-    
 
-class ModelClass():
 
-    def __init__(self, func, ValNames = None, #Lista lettere per nomi param
-                             ValStart = None, #3 Dizionari del tipo {'a' : float}
-                             ValMin = None, 
-                             ValMax = None):
+class ModelloConParametri():
+
+    def __init__(self, func, ValNames=None,  # Lista lettere per nomi param
+                 ValStart=None,  # 3 Dizionari del tipo {'a' : float}
+                 ValMin=None,
+                 ValMax=None):
+
         self.func = func
 
         pardict = make_starting_pardict(Massimo_Parametri)
-		
+
         for key in list(pardict):
             if key in ValNames:
                 pardict[key]["ValStart"] = 1.0
             else:
                 pardict.pop(key)
-        
+
         if ValStart is not None:
             for key in ValStart:
                 pardict[key]["ValStart"] = Valstart[key]
-        
+
         if ValMin is not None:
             for key in ValMin:
                 pardict[key]["ValMin"] = ValMin[key]
@@ -76,17 +73,26 @@ class ModelClass():
             for key in ValMax:
                 pardict[key]["ValMax"] = ValMax[key]
 
-        self.pardict = pardict
+        self.pardict = make_actual_pardict(pardict)
 
-print(ModelClass(pescadati, ValNames = ['a','c','e'], ValMax = {'e':3.0}).pardict)
 
-class xy():
+def make_actual_pardict(pardict):
+    fit_params = Parameters()
+    for key, dict_of_values in pardict.items():
+        fit_params.add(key, value=dict_of_values["ValStart"],
+                       min=dict_of_values["ValMin"] if (
+                           dict_of_values["ValMin"] is not None) else -np.inf,
+                       max=dict_of_values["ValMax"] if (
+                           dict_of_values["ValMax"] is not None) else np.inf
+                       )
+    return fit_params
 
-    def __init__(self, varx, vary, errx, erry):
-        self.varx = varx
-        self.vary = vary
-        self.errx = errx
-        self.erry = erry
+
+class XY():
+
+    def __init__(self, x, xerr, y, yerr):  # Both x and y are uarrays, provided by unumpy package
+        self.x = unp.uarray(x, xerr)
+        self.y = unp.uarray(y, yerr)
 
 
 def derivata(FunzioneModello, parametri, x0):
@@ -95,20 +101,13 @@ def derivata(FunzioneModello, parametri, x0):
     Il secondo input è una struttura di lmfit che viene restituita dalla funzione fit(). Quindi questa funzione può essere utilizzata
     solo dopo il primo fit per farne un secondo utilizzando l'errore indotto
     """
-    h = 1e-8
+    h = 1e-15
 
     # Restituisce un numero, la derivata del modello a parametri fissati
-    return (FunzioneModello(parametri, x0+h) - FunzioneModello(parametri, x0-h)) / (2*h)
+    return (Modello.func(parametri, x0+h) - Modello.func(parametri, x0-h)) / (2*h)
 
 
-def Assegnaparam(dict, num):
-    lettere = ['a', 'b', 'c', 'd', 'e']
-    for i in range(5 - num):
-        del dict[lettere[-1 - i]]
-    return dict
-
-
-def fit(FunzioneModello, Classexy, stampa=True):
+def fit(FunzioneModello, data2D, verbose=True):
     """
     Il fit vero e proprio. Di solito si chiama fit(residual) dal momento che la funzione del residuo si chiama "residual".
     Si può però chiamare fit più volte utilizzando residui diversi. xdata e ydata SONO ARRAY e lo devono rimanere! Se il programma dà errore,
@@ -116,51 +115,74 @@ def fit(FunzioneModello, Classexy, stampa=True):
     hanno un metodo comodo che gli array non hanno, e cioè list.append(elemento) che permette di aggiungere ad una lista un elemento ulteriore,
     si consiglia di trasformare l'array in lista, chiamare append() e poi ritrasformare in array.
     """
-    val, mins, maxs = FunzioneModello.Vals, FunzioneModello.ValMin, FunzioneModello.ValMax
-    fit_params = Parameters()
-    fit_params.add_many(('a', val['a'], True, mins['a'], maxs['a'], None, None),
-                        ('b', val['b'], True, mins['b'],
-                         maxs['b'], None, None),
-                        ('c', val['c'], True, mins['c'],
-                         maxs['c'], None, None),
-                        ('d', val['d'], True, mins['d'],
-                         maxs['d'], None, None),
-                        ('e', val['e'], True, mins['e'], maxs['e'], None, None))
-    fit_params = Assegnaparam(fit_params, FunzioneModello.numParams)
+    fit_params = FunzioneModello.pardict
 
     def residual(pars, x, y):  # NON MODIFICARE GLI INPUT DELLA FUNZIONE, E NEMMENO IL LORO ORDINE
-
-        return (Funzionemodello.func(pars, x)-y)/(Classexy.erry)
+        x = nominal_values(data2D.x)
+        y = nominal_values(data2D.y)
+        yerr = std_devs(data2D.y)
+        return (FunzioneModello.func(pars, x) - y) / yerr
     """
 	Siccome noi minimizziamo somma((yi-f(xi))/xerri) bisogna definire (yi-f(xi))/xerri perché poi la somma 
 	la fa il programma da solo. Il residuo è definito come (yi-f(xi))/xerri ed è un numero per un dato i.
 	x e data sono quelli che sotto chiamo xdata e ydata. SONO ARRAY e il programma funziona solo se lo sono.
 	"""
 
-    out = minimize(residual, fit_params, args=(xdata,),
-                   kws={'data': ydata}, scale_covar=True)
+    out = minimize(residual, fit_params, args=(x,),
+                   kws={'y': y}, scale_covar=True)
 
-    if stampa:
+    if verbose:
         print(fit_report(out), "\n\n===============================\n\n")
 
-    return out.params
+    return out
 
 
-def plotta(ax, Classexy, i,
+def plotta(ax, data2D, i = None,
 
-           nome=None, colore=None,
+           nome = None, colore = None,
 
-           FunzioneModello=None, parametri=None, DatiGrezzi=True, AncheCurvaFit=True):
+           FunzioneModello = None, parametri = None, DatiGrezzi = True, AncheCurvaFit = True):
 
-    nom = nome[i] if type(nome) == type([]) else nome
-    col = colore[i % len(colore)] if type(colore) == type([]) else colore
 
-    if Datigrezzi == True:
-        ax.plot(Classexy.varx, Classexy.vary, 'o', color=col)
-        ax.errorbar(Classexy.varx, Classexy.vary, yerr=Classexy.erry,
-                    xerr=Classexy.errx, ecolor='black', ls='')
+    #Sia nome che colore possono esser sia liste che stringhe. Se liste, viene utilizzato l'i-esimo elemento
+    #   se stringhe, viene utilizzata la stringa stessa. Se sono liste, ricordarsi di passare il parametro i
+    title = nome[i] if type(nome) == type([]) else nome
+    color = colore[i % len(colore)] if type(colore) == type([]) else colore
 
-    if AncheCurvaFit == True:
-        spazio = np.linspace(min(Classexy.varx), max(Classexy.vary), 1000)
-        ax.plot(spazio, FunzioneModello.func(
-            parametri, Classexy.varx), color=col, label=nom)
+    xdata, ydata = nominal_values(data2D.x), nominal_values(data2D.y)
+    xerr, yerr = std_devs(data2D.x), std_devs(data2D.y)
+
+    if DatiGrezzi:
+        ax.plot(xdata, ydata, 'o', color = color)
+        ax.errorbar(xdata, ydata, yerr = yerr, xerr = xerr, ecolor = 'black', ls = "")
+
+    if AncheCurvaFit:
+        spazio = np.linspace(min(xdata), max(xdata), 1000)
+        ax.plot(spazio, FunzioneModello.func(parametri, spazio), color = color, label = title)
+
+
+# ESEMPIO DI COME USARE QUESTE FUNZIONI:
+
+def retta(pars, x):
+    vals = pars.valuesdict()
+    a = vals['a']
+    b = vals['b']
+    return a*x + b
+
+modelloRetta = ModelloConParametri(retta, ValNames = ["a", "b"])
+
+x = np.array([41., 42., 43., 44., 45., 46., 47., 48., 49., 50.])
+y = np.array([33.9, 34.8, 34.7, 35.6, 36.4, 37.7, 36.8, 38.9, 38.6, 40.2])
+sx = np.array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
+sy = np.ones(len(x))*0.1
+
+xy = XY(x, sx, y, sy)
+
+out = fit(modelloRetta, xy)
+
+print(fit_report(out))
+
+fig,ax1=plt.subplots()
+
+plotta(ax1, xy, FunzioneModello = modelloRetta, parametri = out.params)
+plt.show()
