@@ -9,6 +9,7 @@ from lmfit import Parameters, fit_report, minimize, Parameter
 import matplotlib.pyplot as plt
 
 Alfabeto = list(string.ascii_lowercase)
+Massimo_Parametri = 26
 
 x = np.array([41., 42., 43., 44., 45., 46., 47., 48., 49., 50.])
 y = np.array([33.9, 34.8, 34.7, 35.6, 36.4, 37.7, 36.8, 38.9, 38.6, 40.2])
@@ -45,16 +46,39 @@ def make_starting_pardict(n):
         param_dict = {"ValMin": None, "ValMax": None, "ValStart": None}
         final_dict[Alfabeto[i]] = param_dict
     return final_dict
+    
 
+class ModelClass():
 
-class modelclass():
-
-    def __init__(self, func, numParams=1, Vals=None, ValMin=None, ValMax=None):
+    def __init__(self, func, ValNames = None, #Lista lettere per nomi param
+                             ValStart = None, #3 Dizionari del tipo {'a' : float}
+                             ValMin = None, 
+                             ValMax = None):
         self.func = func
-        self.numParams = numParams
-		self.pardict = make_starting_pardict()
-		
 
+        pardict = make_starting_pardict(Massimo_Parametri)
+		
+        for key in list(pardict):
+            if key in ValNames:
+                pardict[key]["ValStart"] = 1.0
+            else:
+                pardict.pop(key)
+        
+        if ValStart is not None:
+            for key in ValStart:
+                pardict[key]["ValStart"] = Valstart[key]
+        
+        if ValMin is not None:
+            for key in ValMin:
+                pardict[key]["ValMin"] = ValMin[key]
+
+        if ValMax is not None:
+            for key in ValMax:
+                pardict[key]["ValMax"] = ValMax[key]
+
+        self.pardict = pardict
+
+print(ModelClass(pescadati, ValNames = ['a','c','e'], ValMax = {'e':3.0}).pardict)
 
 class xy():
 
