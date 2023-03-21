@@ -11,6 +11,7 @@ from uncertainties.unumpy import std_devs, nominal_values
 
 
 Energie = {"Am": 5.486, "Np": 4.788, "Cm": 5.805}
+energies_of_peaks = sorted([5.443, 5.388, 5.763, 4.771, 4.639])
 
 df = pescadati("./excelfinto.xlsx", colonne = 'A:J', listaRighe = range(11,21))
 df = df.dropna(axis = 1)
@@ -64,4 +65,10 @@ a, b = uncertainties.correlated_values([out.params["a"].value, out.params["b"].v
 
 u_energies = a*u_channels + b*np.ones(len(channels))
 
-print(u_energies)
+actual_u_energies = unp.uarray(energies_of_peaks, np.ones(len(energies_of_peaks))*0.001)
+
+Delta = actual_u_energies - u_energies
+
+for x,y in zip(Delta, unp.nominal_values(Delta)/unp.std_devs(Delta)):
+    print(x,y,sep="\t")
+
