@@ -65,7 +65,7 @@ fit_params.add('b', value=1.)
 
 out = minimize(residual, fit_params, args=(xdata,), kws={'data': ydata},scale_covar=True)
 
-#print(fit_report(out))
+print("ppp",fit_report(out))
 
 spazio = np.linspace(min(xdata)-1,max(xdata)+1,100)
 
@@ -75,7 +75,7 @@ ax.set_ylabel('variable y - u.m.')
 plt.plot(xdata,ydata,'o')
 plt.plot(spazio,model(out.params,spazio))
 plt.errorbar(xdata,ydata,yerr=yerr,ecolor='black', ls=" ")
-#plt.show()
+plt.show()
 
 df = pescadati("./excelfinto.xlsx", colonne = 'B:F', listaRighe = range(26,29))
 df.columns = ["Picco", "CNT", "MezzoPicco", "FWHM", "err"]
@@ -117,4 +117,4 @@ def sigma_E(ch, sigma_ch, cov, params):
     print(termine1, termine2, termine3)
     return a*ch + b, np.sqrt(termine1 + termine2 + termine3 + termine4)
 
-print(sigma_E(942, 1.702, out.covar, out.params))
+print(sigma_E(1072, 1.702, out.covar, out.params))
