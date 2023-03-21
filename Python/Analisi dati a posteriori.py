@@ -13,7 +13,7 @@ from uncertainties.unumpy import std_devs, nominal_values
 Energie = {"Am": 5.486, "Np": 4.788, "Cm": 5.805}
 energies_of_peaks = sorted([5.443, 5.388, 5.763, 4.771, 4.639])
 
-df = pescadati("./excelfinto.xlsx", colonne = 'A:J', listaRighe = range(11,21))
+df = pescadati("../excelfinto.xlsx", colonne = 'A:J', listaRighe = range(11,21))
 df = df.dropna(axis = 1)
 df.columns = ["ch1", "ch2", "delta", "CHN", "CNT", "errore_ch"]
 
@@ -42,7 +42,7 @@ _,(ax1, ax2)=plt.subplots(1, 2)
 plotta(ax1, xy, FunzioneModello = modelloRetta, parametri = out.params)
 
 
-df = pescadati("./excelfinto.xlsx", colonne = 'B:F', listaRighe = range(26,29))
+df = pescadati("../excelfinto.xlsx", colonne = 'B:F', listaRighe = range(26,29))
 df.columns = ["Picco", "CNT", "MezzoPicco", "FWHM", "err"]
 
 ydata = np.array(sorted(list(Energie.values())))
