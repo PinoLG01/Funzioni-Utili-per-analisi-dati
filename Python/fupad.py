@@ -7,13 +7,17 @@ import numpy as np
 from lmfit import Parameters, fit_report, minimize, Parameter
 import matplotlib.pyplot as plt
 from uncertainties.unumpy import std_devs, nominal_values
+from mdutils import MdUtils
 
 
 Alfabeto = list(string.ascii_lowercase)
+
+Redefine_Print = False
+
 Massimo_Parametri = 26
 Colori = ['blue','green','red','yellow','violet']
 
-def pescadati(file_name='my_file.xlsx', foglio=0, colonne='A:E', listaRighe=[0, 1, 2], header=None):
+def pescadati(file_name = 'my_file.xlsx', foglio = 0, colonne = 'A:E', listaRighe = [0, 1, 2], header = None):
     """
     Prende i dati dal file_name. Mantenere la forma 'X:Y' per le colonne. 
     Restituisce una tabella (DataFrame) che contiene le colonne del file excel specificato, e che ha solo le righe della lista specificata.
@@ -24,9 +28,9 @@ def pescadati(file_name='my_file.xlsx', foglio=0, colonne='A:E', listaRighe=[0, 
             dire che la riga 6 del file sarà usata per i titoli (0-indexed)
     """
 
-    df = pd.read_excel(file_name, sheet_name=foglio, header=header,
+    df = pd.read_excel(file_name, sheet_name = foglio, header = header,
 
-                       usecols=colonne, skiprows=lambda x: x not in listaRighe,)
+                       usecols = colonne, skiprows = lambda x: x not in listaRighe,)
 
     return df
 
@@ -62,7 +66,7 @@ class ModelloConParametri():
 
         if ValStart is not None:
             for key in ValStart:
-                pardict[key]["ValStart"] = Valstart[key]
+                pardict[key]["ValStart"] = ValStart[key]
 
         if ValMin is not None:
             for key in ValMin:
@@ -94,7 +98,7 @@ class XY():
         self.y = unp.uarray(y, yerr)
 
 
-def derivata(FunzioneModello, parametri, x0):
+def derivata(Modello, parametri, x0):
     """
     Dato il modello(che è una funzione da R in R), trova la derivata al punto x0 di esso, per calcolare l'errore indotto.
     Il secondo input è una struttura di lmfit che viene restituita dalla funzione fit(). Quindi questa funzione può essere utilizzata
@@ -159,6 +163,18 @@ def plotta(ax, data2D, i = None,
         ax.plot(spazio, FunzioneModello.func(parametri, spazio), color = color, label = title)
 
 
+md = MdUtils(file_name = "../Output")
+
+def write(*args, **kwargs):
+    output = ""
+    for x in args:
+        output += str(x)
+    md.new_paragraph(output)
+
+    print(args, k)
+
+
+
 # MWE OF HOW TO USE THESE FUNCTIONS:
 def main():
 
@@ -196,6 +212,9 @@ def main():
     print(a,b)
 
     print(a*45.5+b) #Gives correct result of 36.76 \pm 0.17 so it keeps the covariance into account
+
+
+    md.create_md_file()
 
 if __name__ == "__main__":
     main()
