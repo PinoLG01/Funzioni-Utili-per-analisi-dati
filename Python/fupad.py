@@ -173,6 +173,24 @@ def write(*args, **kwargs):
 
     print(args, k)
 
+def CrystalBall(x, mu, sigma, alpha, n):
+    t = (x - mu) / sigma * np.sign(alpha)
+    abs_alpha = np.abs(alpha)
+    a = np.power((n / abs_alpha), n) * np.exp(-0.5 * np.square(alpha))
+    b = (n / abs_alpha) - abs_alpha
+    print(f"t {t} alfa {alpha} a {a} b {b} mu {mu} sigma {sigma}")
+    cond = np.less(t, -abs_alpha) #Crea un array di booleani (tutti true quando t<-a e tutti false quando t>-a)
+    func = np.where(              #Crea un array di funzioni (tutte a*(b-t)^n prima e exp(-t^2/2) dopo)
+        cond,                     
+        lambda t: a*np.power(b - t, -n),
+        lambda t: np.exp(-0.5 * t**2)
+    )
+    t, func = list(t), list(func)
+    pippo = np.array([f(t[i]) for i, f in enumerate(func)])
+    print(pippo, np.argwhere(np.isnan(pippo)))
+    return pippo  #Array corrispondente all'applicazione punto per punto
+                                                            #  dell'array di funzioni all'array t
+
 
 
 # MWE OF HOW TO USE THESE FUNCTIONS:
