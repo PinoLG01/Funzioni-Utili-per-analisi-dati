@@ -110,7 +110,7 @@ def derivata(Modello, parametri, x0):
     return (Modello.func(parametri, x0+h) - Modello.func(parametri, x0-h)) / (2*h)
 
 
-def fit(FunzioneModello, data2D, verbose=True):
+def fit(FunzioneModello, data2D, verbose=True, debug = False):
     """
     Il fit vero e proprio. Di solito si chiama fit(residual) dal momento che la funzione del residuo si chiama "residual".
     Si può però chiamare fit più volte utilizzando residui diversi. xdata e ydata SONO ARRAY e lo devono rimanere! Se il programma dà errore,
@@ -123,7 +123,10 @@ def fit(FunzioneModello, data2D, verbose=True):
     y = nominal_values(data2D.y)
     yerr = std_devs(data2D.y)
     def residual(pars, x, y):  # NON MODIFICARE GLI INPUT DELLA FUNZIONE, E NEMMENO IL LORO ORDINE
-        return (FunzioneModello.func(pars, x) - y) / yerr
+        pippo = (FunzioneModello.func(pars, x) - y) / yerr
+        if debug:
+            print("I dati che stanno venendo fittati sono \n X: ", x, "\n Distanza al quadrato:", pippo)
+        return pippo
     """
 	Siccome noi minimizziamo somma((yi-f(xi))/xerri) bisogna definire (yi-f(xi))/xerri perché poi la somma 
 	la fa il programma da solo. Il residuo è definito come (yi-f(xi))/xerri ed è un numero per un dato i.
@@ -178,7 +181,7 @@ def CrystalBall(x, mu, sigma, alpha, n):
     abs_alpha = np.abs(alpha)
     a = np.power((n / abs_alpha), n) * np.exp(-0.5 * np.square(alpha))
     b = (n / abs_alpha) - abs_alpha
-    print(f"t {t} alfa {alpha} a {a} b {b} mu {mu} sigma {sigma}")
+    #print(f"t {t} alfa {alpha} a {a} b {b} mu {mu} sigma {sigma}")
     cond = np.less(t, -abs_alpha) #Crea un array di booleani (tutti true quando t<-a e tutti false quando t>-a)
     func = np.where(              #Crea un array di funzioni (tutte a*(b-t)^n prima e exp(-t^2/2) dopo)
         cond,                     
@@ -187,11 +190,21 @@ def CrystalBall(x, mu, sigma, alpha, n):
     )
     t, func = list(t), list(func)
     pippo = np.array([f(t[i]) for i, f in enumerate(func)])
-    print(pippo, np.argwhere(np.isnan(pippo)))
+    #print(pippo, np.argwhere(np.isnan(pippo)))
     return pippo  #Array corrispondente all'applicazione punto per punto
                                                             #  dell'array di funzioni all'array t
 
-
+def u_CrystalBall(x, mu, sigma, alpha, n):
+    t = (x - mu) / sigma * np.sign(alpha)
+    abs_alpha = np.abs(alpha)
+    a = np.power((n / abs_alpha), n) * unp.exp(-0.5 * np.square(alpha))
+    b = (n / abs_alpha) - abs_alpha
+    if t <= -abs_alpha:
+        return a*np.power(b - t, -n)
+    elif t > -abs_alpha:
+        return unp.exp(-0.5 * t**2)
+    else:
+        print("C'è stato un problema. t non è nè maggiore nè minore di alfa")
 
 # MWE OF HOW TO USE THESE FUNCTIONS:
 def main():
