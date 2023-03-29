@@ -93,9 +93,13 @@ def make_actual_pardict(pardict):
 
 class XY():
 
-    def __init__(self, x, xerr, y, yerr):  # Both x and y are uarrays, provided by unumpy package
-        self.x = unp.uarray(x, xerr)
-        self.y = unp.uarray(y, yerr)
+    def __init__(self, x = None, xerr = None, y = None, yerr = None, uarr = False):  # Both x and y are uarrays, provided by unumpy package
+        if uarr:
+            self.x = x
+            self.y = y
+        else:
+            self.x = unp.uarray(x, xerr)
+            self.y = unp.uarray(y, yerr)
 
 
 def derivata(Modello, parametri, x0):

@@ -14,9 +14,10 @@ from uncertainties.unumpy import std_devs, nominal_values
 Energie = {"Am": 5.486, "Np": 4.788, "Cm": 5.805}
 energies_of_peaks = sorted([5.443, 5.388, 5.763, 4.771, 4.639])
 _, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4)
+_, (ax5, ax6) = plt.subplots(1, 2)
 Energie_mylar = pd.DataFrame({"Energie": [4.0, 4.5, 5.0, 5.5],
                               "Range": [2.90e-3, 3.44e-3, 4.04e-3, 4.67e-3]})
-
+pi = 3.1415926535
 
 def retta(pars, x):  # Define a line. Pars is a dict of parameters and x an array of data
     vals = pars.valuesdict()
@@ -35,6 +36,24 @@ def Poly(pars, x):
 
 Pol = ModelloConParametri(Poly, ValNames = ["a", "b", "c"])
 
+def Coulomb(pars, x):
+    vals = pars.valuesdict()
+    a = vals['a']
+    b = vals['b']
+    return a/(x**2) + b
+
+modelloCoulomb = ModelloConParametri(Coulomb, ValNames = ["a", "b"])
+
+def G_giusto(pars, x):
+    vals = pars.valuesdict()
+    a = vals['a']
+    b = vals['b']
+    primaparte = np.arcsin(1/np.sqrt(2 + 0.5*(a/x)**2))
+    return b*0.5*(1-(4/pi)*primaparte)
+
+modelloG_giusto = ModelloConParametri(G_giusto, ValNames = ["a","b"],
+                                      ValStart = {"a": 40, "b": 1e11}
+                                      )
 
 #PARTE 2: CALIBRAZIONE DELL'ELETTRONICA TRAMITE SEGNALI DI AMPIEZZA NOTA
 
@@ -85,7 +104,7 @@ A_calibr, B_calibr = uncertainties.correlated_values(
 
 #Definizione retta di calibrazione
 def E(Ch):
-    return A_calibr * Ch + B_calibr * np.ones(len(Ch))
+    return A_calibr * Ch + B_calibr
 
 #Calcolo delle energie dei picchi secondari e test z degli array
 u_energies = E(u_channels)
@@ -155,6 +174,67 @@ xy = XY(xdata, np.ones(len(xdata))*0.0001, ydata, np.ones(len(ydata))*0.001e-3)
 #Fit quadratico per estrapolare dopo 
 out = fit(Pol, xy)
 plotta(ax4, xy, FunzioneModello = Pol, parametri = out.params)
+
+a, b, c = uncertainties.correlated_values([out.params["a"].value, out.params["b"].value, out.params["c"].value], out.covar)
+
+def Parabola(x, a, b, c):
+    return a*(x**2)+b*x+c
+
+def Parabola_Inv(y0, a, b, c):
+    return (-b + unp.sqrt(b**2 - 4*a*(c-y0)) ) / (2*a)
+
+def E1(E0, spess, a, b, c):
+    R0 = Parabola(E0, a, b, c)
+    R1 = R0 - spess
+    E1 = Parabola_Inv(R1, a, b, c)
+    return E1
+
+df = pescadati("../RateDistanza e LossMylar.xlsx", foglio = 1, colonne = "B:D", listaRighe = range(6,11))
+df.columns = ["spess", "chn", "u_chn"]
+
+spess = df["spess"].to_numpy()
+u_spess = np.array([0.05, 0.07, 0.2, 0.4, 0.5])
+chn = df["chn"].to_numpy()
+u_chn = df["u_chn"].to_numpy()/1.175
+
+spess, chn = unp.uarray(spess, u_spess)*1e-4*1.39, unp.uarray(chn, u_chn)
+
+E1_misurate = E(chn)
+
+E1_attese = [E1(5.486, x, a, b, c) for x in spess]
+
+for x, y in zip(E1_misurate, E1_attese):
+    print(x, y, sep = "\t")
+
+
+# PARTE 7: RATE IN FUNZIONE DELLA DISTANZA
+
+df = pescadati("../RateDistanza e LossMylar.xlsx", foglio = 0, colonne = "A:E", listaRighe = range(1,9))
+df.columns = ["d", "u_d", "cnt", "t", "u_t"] # Con cnt si intendono tutte le alfa arrivate
+d, u_d = df["d"].to_numpy(), df["u_d"].to_numpy()
+cnt, t, u_t = df["cnt"].to_numpy(), df["t"].to_numpy(), df["u_t"].to_numpy()
+print(df)
+d = unp.uarray(d, u_d)
+t = unp.uarray(t, u_t)
+cnt = unp.uarray(cnt, np.sqrt(cnt))
+
+rate = cnt / t
+
+# Fit 1/r^2
+dati = XY(x = d, y = rate, uarr = True)
+
+out = fit(modelloCoulomb, data2D = dati)
+
+plotta(ax5, data2D = dati, FunzioneModello = modelloCoulomb, parametri = out.params)
+
+# Fit corretto
+
+out = fit(modelloG_giusto, data2D = dati)
+
+plotta(ax6, data2D = dati, FunzioneModello = modelloG_giusto, parametri = out.params)
+
+
+
 
 
 
