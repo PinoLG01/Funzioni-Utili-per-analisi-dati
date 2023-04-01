@@ -14,12 +14,18 @@ from mdutils.mdutils import MdUtils
 
 Energie = {"Am": 5.486, "Np": 4.788, "Cm": 5.805}
 energies_of_peaks = sorted([5.443, 5.388, 5.763, 4.771, 4.639])
-_, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4)
-_, (ax5, ax6) = plt.subplots(1, 2)
 Energie_mylar = pd.DataFrame({"Energie": [4.0, 4.5, 5.0, 5.5],
                               "Range": [2.90e-3, 3.44e-3, 4.04e-3, 4.67e-3]})
 pi = 3.1415926535
 md = MdUtils(file_name = "AnalisiOut")
+
+fig1, ax1 = plt.subplots()
+fig2, ax2 = plt.subplots()
+fig3, ax3 = plt.subplots()
+fig4, ax4 = plt.subplots()
+fig5, ax5 = plt.subplots()
+fig6, ax6 = plt.subplots()
+fig7, ax7 = plt.subplots()
 
 def retta(pars, x):  # Define a line. Pars is a dict of parameters and x an array of data
     vals = pars.valuesdict()
@@ -152,6 +158,12 @@ df = pescadati("../AlphaInAria.xlsx", colonne='J:K', listaRighe=range(4, 19))
 df = df.dropna(axis = 1)  # elimina ogni colonna che abbia almeno un valore vuoto
 df.columns = ["Pressione", "Conteggi"] # associa ad ogni colonna del file excel un nome
 
+press_tutti = df["Pressione"].to_numpy()
+cont_tutti = df["Conteggi"].to_numpy()
+
+ax3.plot(cont_tutti, press_tutti, 'o', color = "blue")
+ax3.errorbar(cont_tutti, press_tutti, yerr = np.ones(len(press_tutti)), xerr = np.sqrt(cont_tutti), ecolor = 'black', ls = "")
+
 md.new_header(title = "Conteggi totali in funzione della pressione" , level = 1)
 md.write(f"{df.to_markdown(index = False)}\n\n")
 
@@ -212,7 +224,7 @@ md.new_header(title = "Range nel Mylar", level = 1)
 
 xdata = Energie_mylar["Energie"].to_numpy()
 ydata = Energie_mylar["Range"].to_numpy()
-xy = XY(xdata, np.ones(len(xdata))*0.0001, ydata, np.ones(len(ydata))*0.001e-3)
+xy = XY(xdata, np.ones(len(xdata))*0.0001, ydata, np.ones(len(ydata))*1e-6)
 
 #Fit quadratico per estrapolare dopo 
 out = fit(Pol, xy)
@@ -327,17 +339,50 @@ modelloG_giusto_c = ModelloConParametri(G_giusto_c, ValNames = ["a","b","c"],
 
 
 out = fit(modelloG_giusto_c, data2D = dati)
+plotta(ax7, data2D = dati, FunzioneModello = modelloG_giusto_c, parametri = out.params)
 
-md.write("\n Il fit ha forma Range = b*0.5*(1-(4/pi)*np.arcsin(1/np.sqrt(2 + 0.5*(a/(x-c))**2))). Il grafico non c'è \n")
+md.write("\n Il fit ha forma Range = b*0.5*(1-(4/pi)*np.arcsin(1/np.sqrt(2 + 0.5*(a/(x-c))**2))). Il grafico è AX7 \n")
 for l in out.params:
     md.write(f"${l} = {out.params[l].value:.5f} \pm {out.params[l].stderr:.5f} $ \n")
 md.insert_code(f"{fit_report(out)} \n")
 
 
+ax1.set_xlabel('Canale')
+ax1.set_ylabel('Tensione [V]')
+ax1.title.set_text("Linearità della tensione")
+
+ax2.set_xlabel('Canale')
+ax2.set_ylabel('Energia [MeV]')
+ax2.title.set_text("Linearità dell'energia")
+
+ax3.set_xlabel('Conteggi')
+ax3.set_ylabel('Pressione [mbar]')
+ax3.title.set_text("Estrapolazione della pressione di dimezzamento")
+
+ax4.set_xlabel('Energia [MeV]')
+ax4.set_ylabel('Range equivalente [g/cm^2]')
+ax4.title.set_text("Fit quadratico sui dati tabulati del Mylar")
+
+ax5.set_xlabel('Distanza tra la sorgente e il rivelatore')
+ax5.set_ylabel('Rate')
+ax5.title.set_text("Rate in funzione della distanza")
+
+ax6.set_xlabel('Distanza tra la sorgente e il rivelatore')
+ax6.set_ylabel('Rate')
+ax6.title.set_text("Rate in funzione della distanza")
+
+ax7.set_xlabel('Distanza tra la sorgente e il rivelatore')
+ax7.set_ylabel('Rate')
+ax7.title.set_text("Rate in funzione della distanza")
 
 
 
 
+
+
+
+plt.show()
+for i, fig in enumerate([fig1, fig2, fig3, fig4, fig5, fig6, fig7]):
+    fig.savefig(f"../Figure/ax{i+1}", bbox_inches="tight")
 
 md.create_md_file()
-plt.show()

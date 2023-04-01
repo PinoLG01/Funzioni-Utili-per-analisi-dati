@@ -239,7 +239,7 @@ def main():
 
     plotta(ax1, xy, FunzioneModello = modelloRetta, parametri = out.params)
     plt.show()
-
+    plt.savefig("ciao")
     cov = out.covar
 
     a, b = uncertainties.correlated_values([out.params["a"].value, out.params["b"].value], cov)

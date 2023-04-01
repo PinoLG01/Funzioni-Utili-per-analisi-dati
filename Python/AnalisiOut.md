@@ -242,7 +242,7 @@ $b = 15108.72430 \pm 1367.26672 $
     C(a, b) = -0.923 
 
 ```
- Il fit ha forma Range = b*0.5*(1-(4/pi)*np.arcsin(1/np.sqrt(2 + 0.5*(a/(x-c))**2))). Il grafico non c'è 
+ Il fit ha forma Range = b*0.5*(1-(4/pi)*np.arcsin(1/np.sqrt(2 + 0.5*(a/(x-c))**2))). Il grafico è AX7 
 $a = 10.54729 \pm 1.48403 $ 
 $b = 38281.21989 \pm 12748.57322 $ 
 $c = -3.54370 \pm 0.84905 $ 
