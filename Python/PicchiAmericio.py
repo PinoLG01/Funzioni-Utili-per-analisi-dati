@@ -8,6 +8,7 @@ import numpy as np
 from lmfit import Parameters, fit_report, minimize, Parameter
 import matplotlib.pyplot as plt
 from uncertainties.unumpy import std_devs, nominal_values
+from mdutils.mdutils import MdUtils
 
 df = pescadati("../SpettroAmericio.xlsx", colonne = "A:B", listaRighe = range(15,2063))
 
@@ -18,6 +19,9 @@ err_conteggi = np.sqrt(conteggi)
 
 _, ax1 = plt.subplots()
 
+spazio = np.linspace(0, 2048, 2048)
+
+md = MdUtils(file_name = "AmericioOut", title = "Report picchi secondari americio")
 
 def SingleCrystalBall(pars, x):
     vals = pars.valuesdict()
@@ -50,20 +54,25 @@ modelloCrystalBall = ModelloConParametri(TripleCrystalBall, ValNames=["a","b","c
 dati = XY(canali, err_canali, conteggi, err_conteggi)
 out = fit(modelloCrystalBall, dati, debug = False)
 
+md.new_header(title = "Fit della tripla Crystalball", level = 1)
+md.write( "Il fit ha forma: $$d*CB(x, \mu = a, \sigma = g, alpha = h, n = i) + e*CB(x, \mu = b, \sigma = g, alpha = h, n = i) + f*CB(x, \mu = c, \sigma = g, alpha = h, n = i)$$ \n")
+for l in out.params:
+    md.write(f"${l} = {out.params[l].value:.5f} \pm {out.params[l].stderr:.5f} $ \n")
+md.insert_code(fit_report(out))
+
 plotta(ax1, dati, FunzioneModello = modelloCrystalBall, parametri = out.params)
 
 val_param = [out.params[par].value for par in out.params]
 
+a, b, c, d, e, f, g, h, i = val_param
+
+ax1.plot(spazio, d*CrystalBall(spazio, mu = a, sigma = g, alpha = h, n = i))
+ax1.plot(spazio, e*CrystalBall(spazio, mu = b, sigma = g, alpha = h, n = i))
+ax1.plot(spazio, f*CrystalBall(spazio, mu = c, sigma = g, alpha = h, n = i))
+
 print(val_param)
 
 A, B, C, D, E, F, G, H, I = uncertainties.correlated_values(val_param, out.covar)
-
-def integrale_crystal(x, mu, sigma, alpha, n, amp):
-    somma = uncertainties.ufloat(0, 0)
-    for i in x:
-        u_x = uncertainties.ufloat(i+1, 1)
-        somma += amp*CrystalBall(u_x, mu, sigma, alpha, n)
-    return somma
 
 print(D*u_CrystalBall(x = uncertainties.ufloat(1300, 1), mu = A, sigma = G, alpha = H, n = I))
 
@@ -82,9 +91,12 @@ I1, I2, I3 = (
 
 tot = I1 + I2 + I3
 
-print(I1, I2, I3, f'Totale: {tot}', sep = "\t\t")
+md.write(f"\n Si scrivono i valori degli integrali nella forma $(\mu, amp)$ I1:\n"
+        f" (A, D) I1 = {I1} \t BR1: {I1/tot} \n "
+        f" (B, E) I2 = {I2} \t BR2: {I2/tot} \n "
+        f" (C, F) I3 = {I3} \t BR3: {I3/tot} \n  "
+        f" Totale = {tot} \t BRtot: {(I1+I2+I3)/tot:.6f}\n")
 
-print(f"BR1: {I1/tot}", f'BR2: {I2/tot}', f'BR3: {I3/tot}')
 
 i1, ui1, i2, ui2, i3, ui3 = I1.nominal_value, I1.std_dev, I2.nominal_value, I2.std_dev, I3.nominal_value, I3.std_dev
 
@@ -94,4 +106,11 @@ print(err_sbagliato)
 
 print('Result = {:f}'.format(err_sbagliato))
 
+
+
+
+
+
+
+md.create_md_file()
 plt.show()
