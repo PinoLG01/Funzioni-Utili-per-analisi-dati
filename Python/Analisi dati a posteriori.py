@@ -26,6 +26,7 @@ fig4, ax4 = plt.subplots()
 fig5, ax5 = plt.subplots()
 fig6, ax6 = plt.subplots()
 fig7, ax7 = plt.subplots()
+fig8, ax8 = plt.subplots()
 
 def retta(pars, x):  # Define a line. Pars is a dict of parameters and x an array of data
     vals = pars.valuesdict()
@@ -346,6 +347,16 @@ for l in out.params:
     md.write(f"${l} = {out.params[l].value:.5f} \pm {out.params[l].stderr:.5f} $ \n")
 md.insert_code(f"{fit_report(out)} \n")
 
+uy2, y2 = [], []
+for x, y in zip(dati.x, dati.y):
+    uy2.append(np.sqrt(y.std_dev**2 + (x.std_dev * derivata(modelloG_giusto_c, out.params, x.n))**2))
+    y2.append(y.nominal_value)
+    print(derivata(modelloG_giusto_c, out.params, x.n))
+print("FIT FINALE")
+print(dati.y, y2, uy2)
+dati.y = unp.uarray(y2, uy2)
+out = fit(modelloG_giusto, data2D = dati)
+plotta(ax8, data2D = dati, FunzioneModello = modelloG_giusto, parametri = out.params)
 
 ax1.set_xlabel('Canale')
 ax1.set_ylabel('Tensione [V]')
@@ -363,26 +374,24 @@ ax4.set_xlabel('Energia [MeV]')
 ax4.set_ylabel('Range equivalente [g/cm^2]')
 ax4.title.set_text("Fit quadratico sui dati tabulati del Mylar")
 
-ax5.set_xlabel('Distanza tra la sorgente e il rivelatore')
+ax5.set_xlabel('Distanza tra la sorgente e il rivelatore(1/r^2)')
 ax5.set_ylabel('Rate')
 ax5.title.set_text("Rate in funzione della distanza")
 
-ax6.set_xlabel('Distanza tra la sorgente e il rivelatore')
+ax6.set_xlabel('Distanza tra la sorgente e il rivelatore(arcsin)')
 ax6.set_ylabel('Rate')
 ax6.title.set_text("Rate in funzione della distanza")
 
-ax7.set_xlabel('Distanza tra la sorgente e il rivelatore')
+ax7.set_xlabel('Distanza tra la sorgente e il rivelatore(arcsin traslato)')
 ax7.set_ylabel('Rate')
 ax7.title.set_text("Rate in funzione della distanza")
 
-
-
-
-
-
+ax8.set_xlabel('Distanza tra la sorgente e il rivelatore(arcsin con errori)')
+ax8.set_ylabel('Rate')
+ax8.title.set_text("Rate in funzione della distanza")
 
 plt.show()
-for i, fig in enumerate([fig1, fig2, fig3, fig4, fig5, fig6, fig7]):
+for i, fig in enumerate([fig1, fig2, fig3, fig4, fig5, fig6, fig7, fig8]):
     fig.savefig(f"../Figure/ax{i+1}", bbox_inches="tight")
 
 md.create_md_file()

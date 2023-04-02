@@ -108,7 +108,7 @@ def derivata(Modello, parametri, x0):
     Il secondo input è una struttura di lmfit che viene restituita dalla funzione fit(). Quindi questa funzione può essere utilizzata
     solo dopo il primo fit per farne un secondo utilizzando l'errore indotto
     """
-    h = 1e-15
+    h = 1e-10
 
     # Restituisce un numero, la derivata del modello a parametri fissati
     return (Modello.func(parametri, x0+h) - Modello.func(parametri, x0-h)) / (2*h)
