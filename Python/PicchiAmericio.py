@@ -17,7 +17,7 @@ conteggi = np.maximum(df[1].to_numpy(), np.ones(len(canali)))
 err_canali = np.ones(len(canali))
 err_conteggi = np.sqrt(conteggi)
 
-_, ax1 = plt.subplots()
+fig1, ax1 = plt.subplots()
 
 spazio = np.linspace(0, 2048, 2048)
 
@@ -107,7 +107,11 @@ print(err_sbagliato)
 print('Result = {:f}'.format(err_sbagliato))
 
 
+ax1.set_xlabel('Canale')
+ax1.set_ylabel('Conteggi')
+ax1.title.set_text("Spettro dell'americio")
 
+fig1.savefig(f"../Figure/Americio", bbox_inches="tight")
 
 
 
