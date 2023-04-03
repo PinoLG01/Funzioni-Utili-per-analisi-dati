@@ -143,10 +143,10 @@ $c = 0.00015 \pm 0.00030 $
     # function evals   = 9
     # data points      = 4
     # variables        = 3
-    chi-square         = 45.0000000
-    reduced chi-square = 45.0000000
-    Akaike info crit   = 15.6814725
-    Bayesian info crit = 13.8403556
+    chi-square         = 0.11250000
+    reduced chi-square = 0.11250000
+    Akaike info crit   = -8.28438567
+    Bayesian info crit = -10.1255026
 [[Variables]]
     a:  9.0000e-05 +/- 1.3416e-05 (14.91%) (init = 1)
     b:  3.2700e-04 +/- 1.2760e-04 (39.02%) (init = 1)

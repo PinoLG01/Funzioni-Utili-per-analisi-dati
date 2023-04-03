@@ -22,6 +22,7 @@ md = MdUtils(file_name = "AnalisiOut")
 fig1, ax1 = plt.subplots()
 fig2, ax2 = plt.subplots()
 fig3, ax3 = plt.subplots()
+fig3inv, ax3inv = plt.subplots()
 fig4, ax4 = plt.subplots()
 fig5, ax5 = plt.subplots()
 fig6, ax6 = plt.subplots()
@@ -196,6 +197,9 @@ A_pressione, B_pressione = uncertainties.correlated_values(
 def pressione(Cnt):
     return A_pressione * Cnt + B_pressione
 
+def pressioneInv(press):
+    return (press - B_pressione.n)/A_pressione.n
+
 metà_conteggio = max(df["Conteggi"])/2
 u_metà_conteggio = uncertainties.ufloat(metà_conteggio, np.sqrt(metà_conteggio))
 
@@ -225,7 +229,7 @@ md.new_header(title = "Range nel Mylar", level = 1)
 
 xdata = Energie_mylar["Energie"].to_numpy()
 ydata = Energie_mylar["Range"].to_numpy()
-xy = XY(xdata, np.ones(len(xdata))*0.0001, ydata, np.ones(len(ydata))*1e-6)
+xy = XY(xdata, np.ones(len(xdata))*0.0001, ydata, np.ones(len(ydata))*0.02e-3)
 
 #Fit quadratico per estrapolare dopo 
 out = fit(Pol, xy)
@@ -268,6 +272,8 @@ E1_attese = [E1(5.486, x, a, b, c) for x in spess]
 print("ENERGIE")
 for x, y in zip(E1_misurate, E1_attese):
     print(x, y, sep = "\t")
+
+print([(x-y).n/(x-y).s for x,y in zip(E1_misurate, E1_attese)])
 
 df = pd.DataFrame({
     "Energie misurate": E1_misurate,
@@ -357,6 +363,10 @@ print(dati.y, y2, uy2)
 dati.y = unp.uarray(y2, uy2)
 out = fit(modelloG_giusto, data2D = dati)
 plotta(ax8, data2D = dati, FunzioneModello = modelloG_giusto, parametri = out.params)
+print(df_per_estrapolazione)
+ax3inv.plot(press_tutti, cont_tutti, 'o', color = "blue")
+ax3inv.errorbar(press_tutti, cont_tutti, yerr = np.sqrt(cont_tutti), xerr = np.ones(len(press_tutti)), ecolor = 'black', ls = "")
+ax3inv.plot(df_per_estrapolazione["Pressione"].to_numpy(), pressioneInv(df_per_estrapolazione["Pressione"]))
 
 ax1.set_xlabel('Canale')
 ax1.set_ylabel('Tensione [V]')
@@ -370,28 +380,34 @@ ax3.set_xlabel('Conteggi')
 ax3.set_ylabel('Pressione [mbar]')
 ax3.title.set_text("Estrapolazione della pressione di dimezzamento")
 
+ax3inv.set_xlabel('Pressione [mbar]')
+ax3inv.set_ylabel('Conteggi')
+ax3inv.title.set_text("Estrapolazione della pressione di dimezzamento")
+
 ax4.set_xlabel('Energia [MeV]')
 ax4.set_ylabel('Range equivalente [g/cm^2]')
 ax4.title.set_text("Fit quadratico sui dati tabulati del Mylar")
 
-ax5.set_xlabel('Distanza tra la sorgente e il rivelatore(1/r^2)')
-ax5.set_ylabel('Rate')
-ax5.title.set_text("Rate in funzione della distanza")
+ax5.set_xlabel('Distanza tra la sorgente e il rivelatore [mm]')
+ax5.set_ylabel('Rate [cnt/s]')
+ax5.title.set_text("Rate in funzione della distanza (1/r^2)")
 
-ax6.set_xlabel('Distanza tra la sorgente e il rivelatore(arcsin)')
-ax6.set_ylabel('Rate')
-ax6.title.set_text("Rate in funzione della distanza")
+ax6.set_xlabel('Distanza tra la sorgente e il rivelatore [mm]')
+ax6.set_ylabel('Rate [cnt/s]')
+ax6.title.set_text("Rate in funzione della distanza (arcsin)")
 
-ax7.set_xlabel('Distanza tra la sorgente e il rivelatore(arcsin traslato)')
-ax7.set_ylabel('Rate')
-ax7.title.set_text("Rate in funzione della distanza")
+ax7.set_xlabel('Distanza tra la sorgente e il rivelatore [mm]')
+ax7.set_ylabel('Rate [cnt/s]')
+ax7.title.set_text("Rate in funzione della distanza (arcsin traslato)")
 
-ax8.set_xlabel('Distanza tra la sorgente e il rivelatore(arcsin con errori)')
+ax8.set_xlabel('Distanza tra la sorgente e il rivelatore [mm]')
 ax8.set_ylabel('Rate')
-ax8.title.set_text("Rate in funzione della distanza")
+ax8.title.set_text("Rate in funzione della distanza (arcsin con errori indotti)")
 
 plt.show()
 for i, fig in enumerate([fig1, fig2, fig3, fig4, fig5, fig6, fig7, fig8]):
     fig.savefig(f"../Figure/ax{i+1}", bbox_inches="tight")
+
+fig3inv.savefig(f"../Figure/ax3inv", bbox_inches="tight")
 
 md.create_md_file()
