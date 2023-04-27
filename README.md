@@ -9,3 +9,5 @@ Da fare:
 - Graficare anche le singole CrystalBall
 
 Verificare che le CrystalBall (e in generale tutto il resto) sia finito
+
+a
